@@ -32,7 +32,7 @@ img {float: right;}
 #submitButton {margin-bottom: .5em;}
 #logout {float: right; margin-right: 1em;}
 
-#newReview, #noReview, #createStore, #switchAccount, #reviewArea, #logout, #lock, #login {display: none;}
+#newReview, #noReview, #createStore, #switchAccount, #reviewArea, #logout, #lock, #login, #reviewForm {display: none;}
 
 #passward {
 	width:100px;

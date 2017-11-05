@@ -8,9 +8,9 @@ window.addEventListener('load', start);
 
 function start(){
 	if (checkLoginStatus()){
-		document.getElementById('login').style.display = "block";
+		document.getElementById('reviewArea').style.display = "block";
 	} else {
-		document.getElementById('reviewForm').style.display = "block";
+		document.getElementById('login').style.display = "block";
 	}
 	startSearchStore();
 }
@@ -175,12 +175,6 @@ function display(){
 								document.getElementById('submitButton').appendChild(icon);
 							}
 							var tr = document.createElement('tr');
-							// indexing
-							td = document.createElement('td');
-							node = document.createTextNode(i+1);
-							td.appendChild(node);
-							td.style['vertical-align'] = 'middle';
-							tr.appendChild(td);
 							// reviewer
 							td = document.createElement('td');
 							node = document.createTextNode(review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4));
@@ -222,7 +216,7 @@ function display(){
 							tr.appendChild(td);
 							tbody.appendChild(tr);
 
-						})
+						});
 					}
 				}
 			});
@@ -302,6 +296,12 @@ function createStoreWrapper(){
 
 function voteReview(reviewer, isUpvote){
 	// some ui process
+	document.getElementById('feedback-msg').innerHTML = `
+	<div class='feedback-div alert alert-warning'>
+		<p class='feedback-p'>Vote Pending... </p>
+	</div>
+	`;
+	setTimeout(startSearchStore, 10000);
 	bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
 		if (error){
 			console.log(error);
