@@ -7,12 +7,17 @@ var locked = true;
 window.addEventListener('load', start);
 
 function start(){
-	if (checkLoginStatus()){
-		document.getElementById('reviewArea').style.display = "block";
-	} else {
-		document.getElementById('login').style.display = "block";
-	}
-	startSearchStore();
+	checkLoginStatus(function(status){
+		if (status){
+			document.getElementById('reviewArea').style.display = "block";
+			console.log("user: " + user);
+			startSearchStore();
+		} else {
+			document.getElementById('login').style.display = "block";
+			console.log("login user: " + user);
+			startSearchStore();
+		}
+	});
 }
 
 function loadPage(href, div, cb){
@@ -23,7 +28,7 @@ function loadPage(href, div, cb){
     cb();
 }
 
-function checkLoginStatus(){
+function checkLoginStatus(cb){
 	// update key and profile from backend server
 	console.log("checkLoginStatus");
 	var xhttp = new XMLHttpRequest();
@@ -41,11 +46,10 @@ function checkLoginStatus(){
 				document.getElementById('lock').style.display = 'block';
 				document.getElementById('logout').style.display = 'block';
 				document.getElementById('login').style.display = 'none';
-				document.getElementById('profile').innerHTML = "Hello, " + user;
 				document.getElementById('unlock').addEventListener('click', unlockAccount);
-				return true;
+				cb(true);
 			} else {
-				return false;
+				cb(false);
 			}
 		}
 	};
@@ -65,7 +69,9 @@ function unlockAccount(){
 
 function startSearchStore(){
 	if (user != ""){
-		document.getElementById('profile').innerHTML = "Hello, " + user;
+		bc.getBalance(function(balance){
+			document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
+		});
 	}
 	console.log("searching...");
 	getCurrentTabUrl(display);
