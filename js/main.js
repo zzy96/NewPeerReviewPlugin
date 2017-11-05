@@ -2,15 +2,17 @@ var bc = require('./blockchainConnector.js');
 var storeName;
 var storeId;
 var user = "";
+var locked = true;
 
 window.addEventListener('load', start);
 
 function start(){
 	if (checkLoginStatus()){
-		loadPage('html/reviewcomponent.html', 'reviewForm', startSearchStore);
+		document.getElementById('login').style.display = "block";
 	} else {
-		loadPage('html/logincomponent.html', 'login', startSearchStore);
+		document.getElementById('reviewForm').style.display = "block";
 	}
+	startSearchStore();
 }
 
 function loadPage(href, div, cb){
@@ -23,16 +25,41 @@ function loadPage(href, div, cb){
 
 function checkLoginStatus(){
 	// update key and profile from backend server
-	if (true){
-		bc.storeEthAccount({
-			"address": "0x62617E98Bd15B4333D7cDBB5d19D47FD936Ef8eB",
-			"privateKey": "0x5b6c27844966d24889cc36616fa0e0c90fef40b0bd14eefe7b852aaf5ccba4cb"
-		});
-		document.getElementById('logout').style.display = 'block';
-		user = "Vitalik";
-		return true;
-	} else {
-		return false;
+	console.log("checkLoginStatus");
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			// Typical action to be performed when the document is ready:
+			var response = JSON.parse(xhttp.responseText);
+			if (response.login_status == "yes"){
+				console.log('account address: ' + response.address);
+				bc.storeEthAccount({
+					"address": response.address,
+					"privateKey": response.encrypted_account
+				});
+				user = response.username;
+				document.getElementById('lock').style.display = 'block';
+				document.getElementById('logout').style.display = 'block';
+				document.getElementById('login').style.display = 'none';
+				document.getElementById('profile').innerHTML = "Hello, " + user;
+				document.getElementById('unlock').addEventListener('click', unlockAccount);
+				return true;
+			} else {
+				return false;
+			}
+		}
+	};
+	xhttp.open('GET', 'http://188.166.190.168:8000/wallet/check', true);
+	xhttp.send();
+}
+
+function unlockAccount(){
+	var password = document.getElementById("password").value;
+	var privateKey = bc.decrypt(bc.getEthAccount().privateKey, password);
+	if (bc.validPrivateKey(bc.getEthAccount().address, privateKey.privateKey)){
+		locked = false;
+		document.getElementById('lock').style.display = "none";
+		startSearchStore();
 	}
 }
 
@@ -111,10 +138,11 @@ function display(){
 
 		if (isExist){
 			document.getElementById('reviewArea').style.display='block';
-			if (user != ""){
-				document.getElementById('score').value = "";
-				document.getElementById('content').value = "";
+			if (user != "" && !locked){
 				document.getElementById('reviewForm').style.display = 'block';
+				console.log("hahhaahahah");
+				document.getElementById('formInputs').reset();
+				console.log("6666666");
 				document.getElementById('submitButton').addEventListener('click', submitReview);
 			}
 			
@@ -138,7 +166,7 @@ function display(){
 						bc.readReview(storeId, i, function(review){
 
 							// old review as placeholder in form
-							if (user != "" && (bc.getEthAccount())['address'] == review.reviewer){
+							if (user != "" && !locked && (bc.getEthAccount())['address'] == review.reviewer){
 								document.getElementById('content').value = review.comment;
 								document.getElementById('score').value = review.score;
 								document.getElementById('submitButton').innerHTML = "Update Your Review ";
@@ -174,7 +202,7 @@ function display(){
 							tbody.appendChild(tr);
 							// votes
 							td = document.createElement('td');
-							if (user != ""){
+							if (user != "" && !locked){
 								icon = document.createElement('span');
 								icon.className = 'glyphicon glyphicon-chevron-up';
 								td.appendChild(icon);
@@ -183,7 +211,7 @@ function display(){
 							}
 							node = document.createTextNode(review.upvote - review.downvote);
 							td.appendChild(node);
-							if (user != ""){
+							if (user != "" && !locked){
 								td.appendChild(document.createElement('br'));
 								icon = document.createElement('span');
 								icon.className = 'glyphicon glyphicon-chevron-down';
@@ -208,8 +236,10 @@ function display(){
 			});
 
 		} else {
-			document.getElementById("createStore").style.display = "block";
-			document.getElementById("createStore").addEventListener('click',createStoreWrapper);
+			if (user != "" && !locked){
+				document.getElementById("createStore").style.display = "block";
+				document.getElementById("createStore").addEventListener('click',createStoreWrapper);
+			}
 		}
 	});// End of storeExist RPC call
 }

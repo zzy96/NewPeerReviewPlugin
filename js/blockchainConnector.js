@@ -31,7 +31,19 @@ exports.getEthAccount = function(){
 
 exports.storeEthAccount = function(account){
 	ethAccount = account;
-	web3.eth.accounts.wallet.add(ethAccount.privateKey);
+}
+
+exports.decrypt = function(encrypted, password){
+	return web3.eth.accounts.decrypt(encrypted, password);
+}
+
+exports.validPrivateKey = function(address, privateKey){
+	if (web3.eth.accounts.privateKeyToAccount(privateKey).address == address){
+		web3.eth.accounts.wallet.add(privateKey);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 /*
