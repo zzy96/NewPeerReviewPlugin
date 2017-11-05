@@ -1,0 +1,52 @@
+<html>
+	<head>
+		<title>Peer Review Plugin</title>
+		<script src="bundle.js"></script>
+		<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/main.css" rel="stylesheet">	
+	</head>
+	<body>
+		<img src="favicon.png" width="30px" height="30px">
+
+		<div  id="logout">
+			<a href="#" target="_blank"><button class="btn btn-warning">LOG OUT</button></a>
+		</div>
+		<p class="headline" id="profile">Welcome to Blockchain Review System</p>
+
+		<div id="feedback-msg"></div>
+
+		<div id="login"></div>
+		
+		<h3 id="storeName"></h3>
+
+		<button class="btn btn-primary" id="createStore">Create Store</button>
+
+		<!-- Beignning of Review Area -->
+		<div id='reviewArea'>
+			<p id="overallScore"><strong>Overall Score: <span id="storeScore"></span></strong></p>
+
+			<div id="reviewForm"></div>
+
+			<section>
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Reviewer</th>
+							<th>Content</th>
+							<th>Score</th>
+							<th>Votes</th>
+						</tr>
+					</thead>
+					<tbody id="reviews">
+					</tbody>	
+				</table>
+			</section>
+
+			<p id="noReview">-- No Review --</p>
+
+		</div>
+		<!-- End of review area -->
+	</body>
+</html>
+

@@ -1,0 +1,5 @@
+node_modules
+blockchain/*
+!blockchain/Contract.sol
+bundle.js
+package-lock.json
