@@ -8,15 +8,10 @@ window.addEventListener('load', start);
 
 function start(){
 	checkLoginStatus(function(status){
-		if (status){
-			document.getElementById('reviewArea').style.display = "block";
-			console.log("user: " + user);
-			startSearchStore();
-		} else {
+		if (!status){
 			document.getElementById('login').style.display = "block";
-			console.log("login user: " + user);
-			startSearchStore();
 		}
+		startSearchStore();
 	});
 }
 
@@ -43,7 +38,6 @@ function checkLoginStatus(cb){
 					"privateKey": response.encrypted_account
 				});
 				user = response.username;
-				document.getElementById('lock').style.display = 'block';
 				document.getElementById('logout').style.display = 'block';
 				document.getElementById('login').style.display = 'none';
 				document.getElementById('unlock').addEventListener('click', unlockAccount);
@@ -53,7 +47,7 @@ function checkLoginStatus(cb){
 			}
 		}
 	};
-	xhttp.open('GET', 'http://188.166.190.168:8000/wallet/check', true);
+	xhttp.open('GET', 'http://188.166.190.168:8000/wallet/check/', true);
 	xhttp.send();
 }
 
@@ -135,6 +129,9 @@ function getStoreFromUrl(url){
 
 function display(){
 	console.log("display: " + storeId);
+	if (locked){
+		document.getElementById('lock').style.display = 'block';
+	}
 
 	// check if store exists
 
