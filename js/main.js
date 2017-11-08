@@ -64,7 +64,11 @@ function unlockAccount(){
 function startSearchStore(){
 	if (user != ""){
 		bc.getBalance(function(balance){
-			document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
+			if (balance == 0){
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(0 Ether <span id="noFund">insufficient balance</span>)</span>`;
+			} else {
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
+			}
 		});
 	}
 	console.log("searching...");
@@ -129,7 +133,9 @@ function getStoreFromUrl(url){
 
 function display(){
 	console.log("display: " + storeId);
-	if (locked){
+
+	if (user != "" && locked)
+	{
 		document.getElementById('lock').style.display = 'block';
 	}
 
@@ -199,22 +205,29 @@ function display(){
 							tbody.appendChild(tr);
 							// votes
 							td = document.createElement('td');
+
+							node = document.createTextNode(review.upvote + " ");
+							td.appendChild(node);
+
+							icon = document.createElement('span');
+							icon.className = 'glyphicon glyphicon-thumbs-up';
+							// icon.className = 'glyphicon glyphicon-chevron-up';
+							td.appendChild(icon);
 							if (user != "" && !locked){
-								icon = document.createElement('span');
-								icon.className = 'glyphicon glyphicon-chevron-up';
-								td.appendChild(icon);
-								td.appendChild(document.createElement('br'));
 								icon.addEventListener('click', voteReview.bind(null, review.reviewer, true));
 							}
-							node = document.createTextNode(review.upvote - review.downvote);
+							
+							node = document.createTextNode(" " + review.downvote + " ");
 							td.appendChild(node);
+
+							icon = document.createElement('span');
+							icon.className = 'glyphicon glyphicon-thumbs-down';
+							// icon.className = 'glyphicon glyphicon-chevron-down';
+							td.appendChild(icon);
 							if (user != "" && !locked){
-								td.appendChild(document.createElement('br'));
-								icon = document.createElement('span');
-								icon.className = 'glyphicon glyphicon-chevron-down';
-								td.appendChild(icon);
 								icon.addEventListener('click', voteReview.bind(null, review.reviewer, false));
 							}
+
 							td.style['vertical-align'] = 'middle';
 							tr.appendChild(td);
 							tbody.appendChild(tr);
@@ -241,10 +254,32 @@ function display(){
 	});// End of storeExist RPC call
 }
 
+function validInput(){
+	if (document.getElementById("content").value == ""){
+		document.getElementById('feedback-msg').innerHTML = `
+		<div class='feedback-div alert alert-warning'>
+			<p class='feedback-p'>Empty Review Content!</p>
+		</div>
+		`;
+		return false;
+	} else if (!(parseInt(document.getElementById("score").value) == Number(document.getElementById("score").value) && parseInt(document.getElementById("score").value)>=0 && parseInt(document.getElementById("score").value)<=100)){
+		document.getElementById('feedback-msg').innerHTML = `
+		<div class='feedback-div alert alert-warning'>
+			<p class='feedback-p'>Invalid Score!</p>
+		</div>
+		`;
+		return false;
+	} else {
+		return true;
+	}
+}
+
 function submitReview(){
+	if (!validInput()){
+		return false;
+	}
 	var content = document.getElementById("content").value;
 	var score = document.getElementById("score").value;
-	document.getElementById('submitButton').style.display = "none";
 	document.getElementById('reviewForm').style.display = "none";
 	document.getElementById('feedback-msg').innerHTML = `
 	<div class='feedback-div alert alert-warning'>
