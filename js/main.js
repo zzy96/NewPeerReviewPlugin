@@ -10,6 +10,7 @@ function start(){
 	checkLoginStatus(function(status){
 		if (!status){
 			document.getElementById('login').style.display = "block";
+			document.getElementById('loginButton').addEventListener('click', login);
 		}
 		startSearchStore();
 	});
@@ -21,6 +22,32 @@ function loadPage(href, div, cb){
     xmlhttp.send();
     document.getElementById(div).innerHTML = xmlhttp.responseText;
     cb();
+}
+
+function login(){
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+
+			var tokenInput = xhttp.responseText.match(/<input type='hidden' name='csrfmiddlewaretoken' value='[\w]+' \/>/g)[0];
+			var token = tokenInput.split("\'")[5];
+			console.log('csrfmiddlewaretoken: ' + token);
+			var xhttpAgain = new XMLHttpRequest();
+			xhttpAgain.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					start();
+				}
+			}
+			xhttpAgain.open('POST', 'http://188.166.190.168:8000/accounts/login/', true);
+			var data = new FormData();
+			data.append('csrfmiddlewaretoken', token);
+			data.append('username', document.getElementById('username').value);
+			data.append('password', document.getElementById('password').value);
+			xhttpAgain.send(data);
+		}
+	};
+	xhttp.open('GET', 'http://188.166.190.168:8000/accounts/login/', true);
+	xhttp.send();
 }
 
 function checkLoginStatus(cb){

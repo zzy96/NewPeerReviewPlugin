@@ -1,6 +1,6 @@
 body {
 	width: 500px;
-	height: 300px;
+	height: 500px;
 	overflow-x: hidden;
 	padding:15px;
 }
@@ -45,4 +45,8 @@ img {float: right;}
 
 #noFund {
 	color: red;
+}
+
+#loginForm {
+	margin: 10px 100px 10px 100px;
 }
