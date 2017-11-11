@@ -7,21 +7,29 @@ var locked = true;
 window.addEventListener('load', start);
 
 function start(){
+	// load some event listener
+	document.getElementById('loginButton').addEventListener('click', login);
+	document.getElementById('logoutButton').addEventListener('click', logout);
 	checkLoginStatus(function(status){
 		if (!status){
 			document.getElementById('login').style.display = "block";
-			document.getElementById('loginButton').addEventListener('click', login);
 		}
 		startSearchStore();
 	});
 }
 
-function loadPage(href, div, cb){
-    var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open('GET', href, false);
-    xmlhttp.send();
-    document.getElementById(div).innerHTML = xmlhttp.responseText;
-    cb();
+function logout(){
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			user = "";
+			locked = true;
+			document.getElementById('profile').innerHTML = "Welcome to Blockchain Review System";
+			start();
+		}
+	}
+	xhttp.open('GET', 'http://188.166.190.168:8000/accounts/logout', true);
+    xhttp.send();
 }
 
 function login(){
@@ -35,7 +43,16 @@ function login(){
 			var xhttpAgain = new XMLHttpRequest();
 			xhttpAgain.onreadystatechange = function() {
 				if (this.readyState == 4 && this.status == 200) {
-					start();
+					console.log(xhttpAgain.responseText);
+					if (xhttpAgain.responseText.match(/success/g)) {
+						start();
+					} else {
+						document.getElementById('feedback-msg').innerHTML = `
+							<div class='feedback-div alert alert-warning'>
+								<p class='feedback-p'>Login Failed!</p>
+							</div>
+						`;
+					}
 				}
 			}
 			xhttpAgain.open('POST', 'http://188.166.190.168:8000/accounts/login/', true);
@@ -79,7 +96,7 @@ function checkLoginStatus(cb){
 }
 
 function unlockAccount(){
-	var password = document.getElementById("password").value;
+	var password = document.getElementById("lockPassword").value;
 	var privateKey = bc.decrypt(bc.getEthAccount().privateKey, password);
 	if (bc.validPrivateKey(bc.getEthAccount().address, privateKey.privateKey)){
 		locked = false;
