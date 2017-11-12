@@ -105,3 +105,52 @@ contract StoreRegistry{
       }
   }
 }
+
+
+/**
+ * The NewUserFunder contract 
+ */
+contract NewUserFunder {
+  uint256 public initialFunding;
+  address public owner;
+  mapping (address => bool) fundedAddress;
+  
+    
+    event LogFundingTopUp(address indexed funder, uint256 amount);
+    event LogFundingUser(address indexed beneficiary, uint256 amount);
+
+    modifier not_funded_before(address _applicant) { 
+      require(fundedAddress[_applicant] == false); 
+      _; 
+    }
+
+    modifier onlyOwner(address _caller) { 
+      require(_caller == owner); 
+      _; 
+    }
+    
+    
+  function NewUserFunder() {
+    owner = msg.sender;
+    initialFunding = 10000000000000000; // 0.01 ether
+  } 
+
+  function() payable{
+    LogFundingTopUp(msg.sender, msg.value);
+  }
+
+  function fundRequest(address _receipient)
+    public
+    not_funded_before(_receipient){
+      fundedAddress[_receipient] = true;
+      require(_receipient.send(initialFunding));
+      LogFundingUser(_receipient, initialFunding);
+  }
+
+  function transferFund (address _destination)
+    public
+    onlyOwner(msg.sender){
+      selfdestruct(_destination);
+  }
+  
+}
