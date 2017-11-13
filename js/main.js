@@ -124,8 +124,8 @@ function unlockAccount(cb){
 function startSearchStore(){
 	if (user != ""){
 		bc.getBalance(function(balance){
-			if (balance == 0){
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(0 Ether <span id="noFund">insufficient balance</span>)</span>`;
+			if (balance < 0.04){
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether <span id="noFund">insufficient balance</span>)</span>`;
 			} else {
 				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
 			}
@@ -356,75 +356,102 @@ function submitReview(){
 	if (!validInput()){
 		return false;
 	}
-	var content = document.getElementById("content").value;
-	var score = document.getElementById("score").value;
-	document.getElementById('reviewForm').style.display = "none";
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Review Pending... </p>
-	</div>
-	`;
+	checkBalance(function(flag){
+		if (flag){
+			var content = document.getElementById("content").value;
+			var score = document.getElementById("score").value;
+			document.getElementById('reviewForm').style.display = "none";
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Review Pending... </p>
+			</div>
+			`;
 
-	bc.submitReview(storeId, content, score, function(error, transactionHash){
-		setTimeout(function(){
-			startSearchStore();
-		}, 10000);
+			bc.submitReview(storeId, content, score, function(error, transactionHash){
+				setTimeout(function(){
+					startSearchStore();
+				}, 10000);
+			});
+		}
 	});
 }
 
 function createStoreWrapper(){
-	document.getElementById('createStore').style.display = "none";
+	checkBalance(function(flag){
+		if (flag){
+			document.getElementById('createStore').style.display = "none";
 
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Creating Store ... </p>
-	</div>
-	`;
-
-	bc.createStore(storeId, function(error, transactionHash){
-		
-		if (error){
 			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-danger'>
-				<p class='feedback-p'>Creating Store Failed</p>
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Creating Store ... </p>
 			</div>
 			`;
-			console.log(error);
-		} else {
-			var refreshCheck = setInterval(function(){
-				bc.storeExist(storeId, function(is_exist){
-					console.log("waiting...");
-					if (is_exist){
-						console.log("created!");
-						document.getElementById('feedback-msg').innerHTML = `
-						<div class='alert alert-success' style='margin: 0px 70px 10px 0px; height:30px;padding:0px'>
-						<p style='font-size:17px; text-align:center; vertical-align:center;'>Store Created! </p>
-						</div>
-						`;
-						clearInterval(refreshCheck);
-						setTimeout(startSearchStore, 1000);
-					}
-				});	
-			}, 1000);
+
+			bc.createStore(storeId, function(error, transactionHash){
+				
+				if (error){
+					document.getElementById('feedback-msg').innerHTML = `
+					<div class='feedback-div alert alert-danger'>
+						<p class='feedback-p'>Creating Store Failed</p>
+					</div>
+					`;
+					console.log(error);
+				} else {
+					var refreshCheck = setInterval(function(){
+						bc.storeExist(storeId, function(is_exist){
+							console.log("waiting...");
+							if (is_exist){
+								console.log("created!");
+								document.getElementById('feedback-msg').innerHTML = `
+								<div class='alert alert-success' style='margin: 0px 70px 10px 0px; height:30px;padding:0px'>
+								<p style='font-size:17px; text-align:center; vertical-align:center;'>Store Created! </p>
+								</div>
+								`;
+								clearInterval(refreshCheck);
+								setTimeout(startSearchStore, 1000);
+							}
+						});	
+					}, 1000);
+				}
+			});
 		}
 	});
 }
 
 function voteReview(reviewer, isUpvote){
-	// some ui process
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Vote Pending... </p>
-	</div>
-	`;
-	setTimeout(startSearchStore, 10000);
-	bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
-		if (error){
-			console.log(error);
-		} else {
+	checkBalance(function(flag){
+		if (flag){
 			// some ui process
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Vote Pending... </p>
+			</div>
+			`;
+			setTimeout(startSearchStore, 10000);
+			bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
+				if (error){
+					console.log(error);
+				} else {
+					// some ui process
+				}
+			});
+		}
+	});
+	
+}
+
+function checkBalance(cb){
+	bc.getBalance(function(balance){
+		if (balance > 0.04){
+			cb(true);
+		} else {
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Insufficient Ether Balance!</p>
+			</div>
+			`;
+			cb(false);
 		}
 	});
 }
-
 // End of main.js module
