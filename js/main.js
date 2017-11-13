@@ -1,8 +1,8 @@
+var fs = require('browserify-fs');
 var bc = require('./blockchainConnector.js');
 var storeName;
 var storeId;
 var user = "";
-var locked = true;
 
 window.addEventListener('load', start);
 
@@ -11,8 +11,19 @@ function start(){
 	document.getElementById('loginButton').addEventListener('click', login);
 	document.getElementById('logoutButton').addEventListener('click', logout);
 	checkLoginStatus(function(status){
-		if (!status){
-			document.getElementById('login').style.display = "block";
+		if (status){
+			document.getElementById('login').style.display = 'none';
+			document.getElementById('logout').style.display = 'block';
+			unlockAccount(function(status){
+				if (status){
+					console.log("Account unlock success");
+				} else {
+					console.log("Account unlock fail");
+				}
+			});
+		} else {
+			document.getElementById('login').style.display = 'block';
+			document.getElementById('logout').style.display = 'none';
 		}
 		startSearchStore();
 	});
@@ -23,7 +34,7 @@ function logout(){
     xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			user = "";
-			locked = true;
+			document.getElementById('reviewForm').style.display = "none";
 			document.getElementById('profile').innerHTML = "Welcome to Blockchain Review System";
 			start();
 		}
@@ -45,7 +56,13 @@ function login(){
 				if (this.readyState == 4 && this.status == 200) {
 					console.log(xhttpAgain.responseText);
 					if (xhttpAgain.responseText.match(/success/g)) {
-						start();
+						fs.writeFile('password.dat', document.getElementById('password').value, function(error){
+							if (error){
+								console.log(error);
+							} else {
+								start();
+							}
+						});
 					} else {
 						document.getElementById('feedback-msg').innerHTML = `
 							<div class='feedback-div alert alert-warning'>
@@ -82,9 +99,7 @@ function checkLoginStatus(cb){
 					"privateKey": response.encrypted_account
 				});
 				user = response.username;
-				document.getElementById('logout').style.display = 'block';
-				document.getElementById('login').style.display = 'none';
-				document.getElementById('unlock').addEventListener('click', unlockAccount);
+				console.log(response.address + " is logged in");
 				cb(true);
 			} else {
 				cb(false);
@@ -95,21 +110,22 @@ function checkLoginStatus(cb){
 	xhttp.send();
 }
 
-function unlockAccount(){
-	var password = document.getElementById("lockPassword").value;
-	var privateKey = bc.decrypt(bc.getEthAccount().privateKey, password);
-	if (bc.validPrivateKey(bc.getEthAccount().address, privateKey.privateKey)){
-		locked = false;
-		document.getElementById('lock').style.display = "none";
-		startSearchStore();
-	}
+function unlockAccount(cb){
+	fs.readFile('password.dat', 'utf-8', function(err, data) {
+        var privateKey = bc.decrypt(bc.getEthAccount().privateKey, data);
+		if (bc.validPrivateKey(bc.getEthAccount().address, privateKey.privateKey)){
+			cb(true);
+		} else {
+			cb(false);
+		}
+    });
 }
 
 function startSearchStore(){
 	if (user != ""){
 		bc.getBalance(function(balance){
-			if (balance == 0){
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(0 Ether <span id="noFund">insufficient balance</span>)</span>`;
+			if (balance < 0.04){
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether <span id="noFund">insufficient balance</span>)</span>`;
 			} else {
 				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
 			}
@@ -178,11 +194,6 @@ function getStoreFromUrl(url){
 function display(){
 	console.log("display: " + storeId);
 
-	if (user != "" && locked)
-	{
-		document.getElementById('lock').style.display = 'block';
-	}
-
 	// check if store exists
 
 	bc.storeExist(storeId, function(isExist){
@@ -191,7 +202,7 @@ function display(){
 
 		if (isExist){
 			document.getElementById('reviewArea').style.display='block';
-			if (user != "" && !locked){
+			if (user != ""){
 				document.getElementById('reviewForm').style.display = 'block';
 				console.log("hahhaahahah");
 				document.getElementById('formInputs').reset();
@@ -219,7 +230,7 @@ function display(){
 						bc.readReview(storeId, i, function(review){
 
 							// old review as placeholder in form
-							if (user != "" && !locked && (bc.getEthAccount())['address'] == review.reviewer){
+							if (user != "" && (bc.getEthAccount())['address'] == review.reviewer){
 								document.getElementById('content').value = review.comment;
 								document.getElementById('score').value = review.score;
 								document.getElementById('submitButton').innerHTML = "Update Your Review ";
@@ -227,54 +238,61 @@ function display(){
 								icon.className = 'glyphicon glyphicon-pencil';
 								document.getElementById('submitButton').appendChild(icon);
 							}
-							var tr = document.createElement('tr');
-							// reviewer
-							td = document.createElement('td');
-							node = document.createTextNode(review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4));
-							td.appendChild(node);
-							td.style['vertical-align'] = 'middle';
-							tr.appendChild(td);
-							// content
-							td = document.createElement('td');
-							node = document.createTextNode(review.comment);
-							td.appendChild(node);
-							td.style['vertical-align'] = 'middle';
-							tr.appendChild(td);
-							// score
-							td = document.createElement('td');
-							node = document.createTextNode(review.score);
-							td.appendChild(node);
-							tr.appendChild(td);
-							td.style['vertical-align'] = 'middle';
-							tbody.appendChild(tr);
-							// votes
-							td = document.createElement('td');
 
-							node = document.createTextNode(review.upvote + " ");
-							td.appendChild(node);
+							// display reviews
+							addressToUsername(review, function(review){
+								var tr = document.createElement('tr');
+								// reviewer
+								td = document.createElement('td');
+								node = document.createTextNode(review.reviewer);
+								td.appendChild(node);
+								td.style['vertical-align'] = 'middle';
+								tr.appendChild(td);
+								// content
+								td = document.createElement('td');
+								node = document.createTextNode(review.comment);
+								td.appendChild(node);
+								td.style['vertical-align'] = 'middle';
+								tr.appendChild(td);
+								// score
+								td = document.createElement('td');
+								node = document.createTextNode(review.score);
+								td.appendChild(node);
+								tr.appendChild(td);
+								td.style['vertical-align'] = 'middle';
+								tbody.appendChild(tr);
+								// votes
+								td = document.createElement('td');
 
-							icon = document.createElement('span');
-							icon.className = 'glyphicon glyphicon-thumbs-up';
-							// icon.className = 'glyphicon glyphicon-chevron-up';
-							td.appendChild(icon);
-							if (user != "" && !locked){
-								icon.addEventListener('click', voteReview.bind(null, review.reviewer, true));
-							}
-							
-							node = document.createTextNode(" " + review.downvote + " ");
-							td.appendChild(node);
+								node = document.createTextNode(review.upvote + " ");
+								td.appendChild(node);
 
-							icon = document.createElement('span');
-							icon.className = 'glyphicon glyphicon-thumbs-down';
-							// icon.className = 'glyphicon glyphicon-chevron-down';
-							td.appendChild(icon);
-							if (user != "" && !locked){
-								icon.addEventListener('click', voteReview.bind(null, review.reviewer, false));
-							}
+								icon = document.createElement('span');
+								icon.className = 'glyphicon glyphicon-thumbs-up';
+								// icon.className = 'glyphicon glyphicon-chevron-up';
+								td.appendChild(icon);
+								if (user != ""){
+									icon.addEventListener('click', voteReview.bind(null, review.reviewer, true));
+								}
 
-							td.style['vertical-align'] = 'middle';
-							tr.appendChild(td);
-							tbody.appendChild(tr);
+								node = document.createElement('br');
+								td.appendChild(node);
+
+								node = document.createTextNode(review.downvote + " ");
+								td.appendChild(node);
+
+								icon = document.createElement('span');
+								icon.className = 'glyphicon glyphicon-thumbs-down';
+								// icon.className = 'glyphicon glyphicon-chevron-down';
+								td.appendChild(icon);
+								if (user != ""){
+									icon.addEventListener('click', voteReview.bind(null, review.reviewer, false));
+								}
+
+								td.style['vertical-align'] = 'middle';
+								tr.appendChild(td);
+								tbody.appendChild(tr);
+							});
 
 						});
 					}
@@ -290,12 +308,28 @@ function display(){
 			});
 
 		} else {
-			if (user != "" && !locked){
+			if (user != ""){
 				document.getElementById("createStore").style.display = "block";
 				document.getElementById("createStore").addEventListener('click',createStoreWrapper);
 			}
 		}
 	});// End of storeExist RPC call
+}
+
+function addressToUsername(review, cb){
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			var response = JSON.parse(xhttp.responseText);
+			review.reviewer = response.username;
+			cb(review);
+		} else if (this.readyState == 4 && this.status == 500) {
+			review.reviewer = review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4);
+			cb(review);
+		}
+	};
+	xhttp.open('GET', 'http://188.166.190.168:8000/account/' + review.reviewer, true);
+	xhttp.send();
 }
 
 function validInput(){
@@ -322,75 +356,102 @@ function submitReview(){
 	if (!validInput()){
 		return false;
 	}
-	var content = document.getElementById("content").value;
-	var score = document.getElementById("score").value;
-	document.getElementById('reviewForm').style.display = "none";
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Review Pending... </p>
-	</div>
-	`;
+	checkBalance(function(flag){
+		if (flag){
+			var content = document.getElementById("content").value;
+			var score = document.getElementById("score").value;
+			document.getElementById('reviewForm').style.display = "none";
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Review Pending... </p>
+			</div>
+			`;
 
-	bc.submitReview(storeId, content, score, function(error, transactionHash){
-		setTimeout(function(){
-			startSearchStore();
-		}, 10000);
+			bc.submitReview(storeId, content, score, function(error, transactionHash){
+				setTimeout(function(){
+					startSearchStore();
+				}, 10000);
+			});
+		}
 	});
 }
 
 function createStoreWrapper(){
-	document.getElementById('createStore').style.display = "none";
+	checkBalance(function(flag){
+		if (flag){
+			document.getElementById('createStore').style.display = "none";
 
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Creating Store ... </p>
-	</div>
-	`;
-
-	bc.createStore(storeId, function(error, transactionHash){
-		
-		if (error){
 			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-danger'>
-				<p class='feedback-p'>Creating Store Failed</p>
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Creating Store ... </p>
 			</div>
 			`;
-			console.log(error);
-		} else {
-			var refreshCheck = setInterval(function(){
-				bc.storeExist(storeId, function(is_exist){
-					console.log("waiting...");
-					if (is_exist){
-						console.log("created!");
-						document.getElementById('feedback-msg').innerHTML = `
-						<div class='alert alert-success' style='margin: 0px 70px 10px 0px; height:30px;padding:0px'>
-						<p style='font-size:17px; text-align:center; vertical-align:center;'>Store Created! </p>
-						</div>
-						`;
-						clearInterval(refreshCheck);
-						setTimeout(startSearchStore, 1000);
-					}
-				});	
-			}, 1000);
+
+			bc.createStore(storeId, function(error, transactionHash){
+				
+				if (error){
+					document.getElementById('feedback-msg').innerHTML = `
+					<div class='feedback-div alert alert-danger'>
+						<p class='feedback-p'>Creating Store Failed</p>
+					</div>
+					`;
+					console.log(error);
+				} else {
+					var refreshCheck = setInterval(function(){
+						bc.storeExist(storeId, function(is_exist){
+							console.log("waiting...");
+							if (is_exist){
+								console.log("created!");
+								document.getElementById('feedback-msg').innerHTML = `
+								<div class='alert alert-success' style='margin: 0px 70px 10px 0px; height:30px;padding:0px'>
+								<p style='font-size:17px; text-align:center; vertical-align:center;'>Store Created! </p>
+								</div>
+								`;
+								clearInterval(refreshCheck);
+								setTimeout(startSearchStore, 1000);
+							}
+						});	
+					}, 1000);
+				}
+			});
 		}
 	});
 }
 
 function voteReview(reviewer, isUpvote){
-	// some ui process
-	document.getElementById('feedback-msg').innerHTML = `
-	<div class='feedback-div alert alert-warning'>
-		<p class='feedback-p'>Vote Pending... </p>
-	</div>
-	`;
-	setTimeout(startSearchStore, 10000);
-	bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
-		if (error){
-			console.log(error);
-		} else {
+	checkBalance(function(flag){
+		if (flag){
 			// some ui process
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Vote Pending... </p>
+			</div>
+			`;
+			setTimeout(startSearchStore, 10000);
+			bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
+				if (error){
+					console.log(error);
+				} else {
+					// some ui process
+				}
+			});
+		}
+	});
+	
+}
+
+function checkBalance(cb){
+	bc.getBalance(function(balance){
+		if (balance > 0.04){
+			cb(true);
+		} else {
+			document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-warning'>
+				<p class='feedback-p'>Insufficient Ether Balance!</p>
+			</div>
+			`;
+			cb(false);
 		}
 	});
 }
-
 // End of main.js module
