@@ -5,6 +5,7 @@
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
+    "browserify-fs": "^1.0.0",
     "jquery": "^3.2.1",
     "web3": "^1.0.0-beta.24"
   },
