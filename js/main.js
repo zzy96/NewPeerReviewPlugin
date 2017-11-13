@@ -34,6 +34,7 @@ function logout(){
     xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			user = "";
+			document.getElementById('submitButton').innerHTML = "Submit Your Review ";
 			document.getElementById('reviewForm').style.display = "none";
 			document.getElementById('profile').innerHTML = "Welcome to Blockchain Review System";
 			start();
@@ -301,7 +302,7 @@ function display(){
 			
 			bc.readOverallScore(storeId, function(totalScore, totalReviewAmount){
 				if (totalReviewAmount != 0){
-					document.getElementById("storeScore").innerHTML = totalScore/totalReviewAmount;
+					document.getElementById("storeScore").innerHTML = Math.floor(totalScore/totalReviewAmount);
 				} else {
 					document.getElementById("storeScore").innerHTML = 0;
 				}
@@ -321,11 +322,13 @@ function addressToUsername(review, cb){
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
 			var response = JSON.parse(xhttp.responseText);
-			review.reviewer = response.username;
-			cb(review);
-		} else if (this.readyState == 4 && this.status == 500) {
-			review.reviewer = review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4);
-			cb(review);
+			if (response.username != ""){
+				review.reviewer = response.username;
+				cb(review);
+			} else {
+				review.reviewer = review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4);
+				cb(review);
+			}
 		}
 	};
 	xhttp.open('GET', 'http://188.166.190.168:8000/account/' + review.reviewer, true);
@@ -446,7 +449,7 @@ function checkBalance(cb){
 			cb(true);
 		} else {
 			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-warning'>
+			<div class='feedback-div alert alert-danger'>
 				<p class='feedback-p'>Insufficient Ether Balance!</p>
 			</div>
 			`;
