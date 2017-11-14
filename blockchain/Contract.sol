@@ -132,7 +132,7 @@ contract NewUserFunder {
     
   function NewUserFunder() {
     owner = msg.sender;
-    initialFunding = 10000000000000000; // 0.01 ether
+    initialFunding = 50000000000000000; // 0.05 ether
   } 
 
   function() payable{
