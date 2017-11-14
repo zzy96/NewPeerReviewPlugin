@@ -1,6 +1,7 @@
 var fs = require('browserify-fs');
 var bc = require('./blockchainConnector.js');
 const $ = require('jquery');
+var serverHost = 'http://188.166.190.168:8000/';
 var storeName;
 var storeId;
 var user = "";
@@ -142,23 +143,14 @@ function startSearchStore(){
 	getCurrentTabUrl(display);
 }
 
-function copyAddressToClipboard(){
-	var textArea = document.createElement("textarea");
-	textArea.style.display = 'none';
-	textArea.value = bc.getEthAccount().address;
-	document.body.appendChild(textArea);
-
-	textArea.select();
-	try {
-	    var successful = document.execCommand('copy');
-	    var msg = successful ? 'successful' : 'unsuccessful';
-	    console.log('Copying text command was ' + msg);
-	  } catch (err) {
-	    console.log('Oops, unable to copy');
-	  }
-	  document.body.removeChild(textArea);
+function copyAddressToClipboard() {
+	var str = bc.getEthAccount().address;
+	document.oncopy = function(event) {
+		event.clipboardData.setData('text/plain', str);
+		event.preventDefault();
+		};
+	document.execCommand("Copy", false, null);
 }
-
 function getCurrentTabUrl(cb) {
 	var queryInfo = {
 		active: true,
