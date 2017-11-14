@@ -11,6 +11,8 @@
   },
   "permissions": [
     "activeTab",
+    "clipboardWrite", // for copy and cut
+    "clipboardRead", // for paste 
     "http://188.166.190.168/"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"

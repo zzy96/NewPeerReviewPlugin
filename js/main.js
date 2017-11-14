@@ -1,5 +1,6 @@
 var fs = require('browserify-fs');
 var bc = require('./blockchainConnector.js');
+const $ = require('jquery');
 var storeName;
 var storeId;
 var user = "";
@@ -124,16 +125,38 @@ function unlockAccount(cb){
 
 function startSearchStore(){
 	if (user != ""){
+
 		bc.getBalance(function(balance){
 			if (balance < 0.04){
 				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether <span id="noFund">insufficient balance</span>)</span>`;
 			} else {
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
+				document.getElementById('profile').innerHTML = `Hello, <a id="copy_user_address" title="click to copy address.">` + user + `</a><span id="balance">(` + balance + ` Ether)</span>`;
 			}
+			document.getElementById('copy_user_address').addEventListener('click',function(){
+				copyAddressToClipboard();
+			});
 		});
+		
 	}
 	console.log("searching...");
 	getCurrentTabUrl(display);
+}
+
+function copyAddressToClipboard(){
+	var textArea = document.createElement("textarea");
+	textArea.style.display = 'none';
+	textArea.value = bc.getEthAccount().address;
+	document.body.appendChild(textArea);
+
+	textArea.select();
+	try {
+	    var successful = document.execCommand('copy');
+	    var msg = successful ? 'successful' : 'unsuccessful';
+	    console.log('Copying text command was ' + msg);
+	  } catch (err) {
+	    console.log('Oops, unable to copy');
+	  }
+	  document.body.removeChild(textArea);
 }
 
 function getCurrentTabUrl(cb) {
