@@ -50,3 +50,16 @@ img {float: right;}
 #loginForm {
 	margin: 10px 100px 10px 100px;
 }
+.flex-container{
+	display: flex;
+	justify-content: space-between;
+}
+.flex-container >div{
+	margin: 10px;
+  	text-align: center;
+  	vertical-align: center;
+}
+#overallScore{
+	margin-top: 20px;
+    margin-bottom: 10px
+}

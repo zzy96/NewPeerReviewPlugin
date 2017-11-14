@@ -34,29 +34,20 @@
 			</div>
 			<hr>
 		</div>
+		<div class="header flex-container">
+			<div>
+				<h3 id="storeName"></h3>
+			</div>
+			<div>
+				<p id="overallScore"><strong>Overall Score: <span id="storeScore"></span></strong></p>
+			</div>
+			
+		</div>
 		
-		<h3 id="storeName"></h3>
-
 		<button class="btn btn-primary" id="createStore">Create Store</button>
 
 		<!-- Beignning of Review Area -->
 		<div id='reviewArea'>
-			<p id="overallScore"><strong>Overall Score: <span id="storeScore"></span></strong></p>
-
-			<div id="reviewForm">
-				<button class="btn btn-primary" id="submitButton">Submit Your Review <span class="glyphicon glyphicon-pencil"></span></button>
-				<form id="formInputs">
-					<div class="form-group">
-						<label>Score:</label>
-						<input type="text" id="score" placeholder="0~100, integer only" class="form-control">
-					</div>
-					<div class="form-group">
-						<label>Comment:</label>
-						<textarea placeholder="your comment here" id="content" class="form-control" rows="3"></textarea>
-					</div>
-				</form>
-			</div>
-
 			<section>
 				<table class="table table-hover">
 					<thead>
@@ -71,8 +62,21 @@
 					</tbody>	
 				</table>
 			</section>
-
 			<p id="noReview">-- No Review --</p>
+
+			<div id="reviewForm">
+				<form id="formInputs">
+					<div class="form-group">
+						<label>Score:</label>
+						<input type="text" id="score" placeholder="0~100, integer only" class="form-control">
+					</div>
+					<div class="form-group">
+						<label>Comment:</label>
+						<textarea placeholder="your comment here" id="content" class="form-control" rows="3"></textarea>
+					</div>
+					<button class="btn btn-primary" id="submitButton">Submit Your Review <span class="glyphicon glyphicon-pencil"></span></button>
+				</form>
+			</div>
 
 		</div>
 		<!-- End of review area -->
