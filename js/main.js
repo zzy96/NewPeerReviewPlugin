@@ -65,11 +65,7 @@ function login(){
 							}
 						});
 					} else {
-						document.getElementById('feedback-msg').innerHTML = `
-							<div class='feedback-div alert alert-warning'>
-								<p class='feedback-p'>Login Failed!</p>
-							</div>
-						`;
+						displayMessage('warning', "Login Failed!");
 					}
 				}
 			}
@@ -148,11 +144,16 @@ function getCurrentTabUrl(cb) {
 
 		if (bc.web3IsConnected()){
 			// if blockchain is connected
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-success'>
-				<p class='feedback-p'>Successfully connected to Blockchain!</p>
-			</div>
-			`;
+			if (user != ""){
+				document.getElementById('feedback-msg').innerHTML = `
+					<div class='feedback-div alert alert-success'>
+						<p class='feedback-p' style='font-size:14px;'>User Address: ${bc.getEthAccount().address}</p>
+					</div>
+				`;
+				// displayMessage('success', bc.getEthAccount().address);
+			} else {
+				displayMessage('success', "Successfully connected to Blockchain!");
+			}
 			// attempt to get a store on google map
 			if (getStoreFromUrl(url)){
 				document.getElementById('storeName').innerHTML = "Searching for "+storeName+" on Blockchain";
@@ -170,11 +171,7 @@ function getCurrentTabUrl(cb) {
 		}
 		else{
 			// if blockchain is not connected
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-warning'>
-				<p class='feedback-p'>Not connected to Blockchain!</p>
-			</div>
-			`;
+			displayMessage('warning', "Not connected to Blockchain!");
 		}
 	});
 }
@@ -205,9 +202,7 @@ function display(){
 			document.getElementById('reviewArea').style.display='block';
 			if (user != ""){
 				document.getElementById('reviewForm').style.display = 'block';
-				console.log("hahhaahahah");
 				document.getElementById('formInputs').reset();
-				console.log("6666666");
 				document.getElementById('submitButton').addEventListener('click', submitReview);
 			}
 			
@@ -245,7 +240,7 @@ function display(){
 								var tr = document.createElement('tr');
 								// reviewer
 								td = document.createElement('td');
-								node = document.createTextNode(review.reviewer);
+								node = document.createTextNode(review.username);
 								td.appendChild(node);
 								td.style['vertical-align'] = 'middle';
 								tr.appendChild(td);
@@ -302,9 +297,9 @@ function display(){
 			
 			bc.readOverallScore(storeId, function(totalScore, totalReviewAmount){
 				if (totalReviewAmount != 0){
-					document.getElementById("storeScore").innerHTML = Math.floor(totalScore/totalReviewAmount);
+					document.getElementById("storeScore").innerHTML = "(Overall Score: " + Math.floor(totalScore/totalReviewAmount) + ")";
 				} else {
-					document.getElementById("storeScore").innerHTML = 0;
+					document.getElementById("storeScore").innerHTML = "(Overall Score: 0)";
 				}
 			});
 
@@ -323,10 +318,10 @@ function addressToUsername(review, cb){
 		if (this.readyState == 4 && this.status == 200) {
 			var response = JSON.parse(xhttp.responseText);
 			if (response.username != ""){
-				review.reviewer = response.username;
+				review.username = response.username;
 				cb(review);
 			} else {
-				review.reviewer = review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4);
+				review.username = review.reviewer.slice(0,6)+'..'+review.reviewer.slice(-4);
 				cb(review);
 			}
 		}
@@ -337,18 +332,10 @@ function addressToUsername(review, cb){
 
 function validInput(){
 	if (document.getElementById("content").value == ""){
-		document.getElementById('feedback-msg').innerHTML = `
-		<div class='feedback-div alert alert-warning'>
-			<p class='feedback-p'>Empty Review Content!</p>
-		</div>
-		`;
+		displayMessage('warning', "Empty Review Content!");
 		return false;
 	} else if (!(parseInt(document.getElementById("score").value) == Number(document.getElementById("score").value) && parseInt(document.getElementById("score").value)>=0 && parseInt(document.getElementById("score").value)<=100)){
-		document.getElementById('feedback-msg').innerHTML = `
-		<div class='feedback-div alert alert-warning'>
-			<p class='feedback-p'>Invalid Score!</p>
-		</div>
-		`;
+		displayMessage('warning', "Invalid Score!");
 		return false;
 	} else {
 		return true;
@@ -364,11 +351,7 @@ function submitReview(){
 			var content = document.getElementById("content").value;
 			var score = document.getElementById("score").value;
 			document.getElementById('reviewForm').style.display = "none";
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-warning'>
-				<p class='feedback-p'>Review Pending... </p>
-			</div>
-			`;
+			displayMessage('warning', "Review Pending...");
 
 			bc.submitReview(storeId, content, score, function(error, transactionHash){
 				setTimeout(function(){
@@ -384,20 +367,12 @@ function createStoreWrapper(){
 		if (flag){
 			document.getElementById('createStore').style.display = "none";
 
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-warning'>
-				<p class='feedback-p'>Creating Store ... </p>
-			</div>
-			`;
+			displayMessage('warning', "Creating Store ...");
 
 			bc.createStore(storeId, function(error, transactionHash){
 				
 				if (error){
-					document.getElementById('feedback-msg').innerHTML = `
-					<div class='feedback-div alert alert-danger'>
-						<p class='feedback-p'>Creating Store Failed</p>
-					</div>
-					`;
+					displayMessage('danger', "Creating Store Failed!");
 					console.log(error);
 				} else {
 					var refreshCheck = setInterval(function(){
@@ -405,11 +380,7 @@ function createStoreWrapper(){
 							console.log("waiting...");
 							if (is_exist){
 								console.log("created!");
-								document.getElementById('feedback-msg').innerHTML = `
-								<div class='alert alert-success' style='margin: 0px 70px 10px 0px; height:30px;padding:0px'>
-								<p style='font-size:17px; text-align:center; vertical-align:center;'>Store Created! </p>
-								</div>
-								`;
+								displayMessage('success', "Store Created!");
 								clearInterval(refreshCheck);
 								setTimeout(startSearchStore, 1000);
 							}
@@ -425,11 +396,7 @@ function voteReview(reviewer, isUpvote){
 	checkBalance(function(flag){
 		if (flag){
 			// some ui process
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-warning'>
-				<p class='feedback-p'>Vote Pending... </p>
-			</div>
-			`;
+			displayMessage('warning', "Vote Pending...");
 			setTimeout(startSearchStore, 10000);
 			bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
 				if (error){
@@ -448,13 +415,36 @@ function checkBalance(cb){
 		if (balance > 0.04){
 			cb(true);
 		} else {
-			document.getElementById('feedback-msg').innerHTML = `
-			<div class='feedback-div alert alert-danger'>
-				<p class='feedback-p'>Insufficient Ether Balance!</p>
-			</div>
-			`;
+			displayMessage('danger', "Insufficient Ether Balance!");
 			cb(false);
 		}
 	});
+}
+
+function displayMessage(type, message){
+	document.getElementById('feedback-msg').innerHTML = `
+		<div class='feedback-div alert alert-${type}'>
+			<p class='feedback-p'>${message}</p>
+		</div>
+	`;
+	// if (type == 'danger'){
+	// 	document.getElementById('feedback-msg').innerHTML = `
+	// 		<div class='feedback-div alert alert-danger'>
+	// 			<p class='feedback-p'>` + message + `</p>
+	// 		</div>
+	// 	`;
+	// } else if (type == 'warning'){
+	// 	document.getElementById('feedback-msg').innerHTML = `
+	// 		<div class='feedback-div alert alert-warning'>
+	// 			<p class='feedback-p'>` + message + `</p>
+	// 		</div>
+	// 	`;
+	// } else {
+	// 	document.getElementById('feedback-msg').innerHTML = `
+	// 		<div class='feedback-div alert alert-success'>
+	// 			<p class='feedback-p'>` + message + `</p>
+	// 		</div>
+	// 	`;
+	// }
 }
 // End of main.js module

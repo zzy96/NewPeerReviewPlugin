@@ -27,9 +27,8 @@ body {
 	padding:0px;
 }
 
-section {padding: 5px;}
+section {margin-bottom: 5px;}
 img {float: right;}
-#overallScore {float: right; font-size: 16px;}
 #submitButton {margin-bottom: .5em;}
 #logout {float: right; margin-right: 1em;}
 
@@ -49,4 +48,9 @@ img {float: right;}
 
 #loginForm {
 	margin: 10px 100px 10px 100px;
+}
+
+#sectionTable{
+	overflow-y: scroll;
+	height: 200px;
 }
