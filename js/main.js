@@ -1,15 +1,20 @@
 var fs = require('browserify-fs');
+var SHA3 = require('browserify-sha3');
 var bc = require('./blockchainConnector.js');
+
 var storeName;
 var storeId;
 var user = "";
+var server = "http://188.166.190.168:3000/";
 
 window.addEventListener('load', start);
 
 function start(){
 	// load some event listener
 	document.getElementById('loginButton').addEventListener('click', login);
+	document.getElementById('signupButton').addEventListener('click', signup);
 	document.getElementById('logoutButton').addEventListener('click', logout);
+	document.getElementById('viewHistoryButton').addEventListener('click', viewHistory);
 	checkLoginStatus(function(status){
 		if (status){
 			document.getElementById('login').style.display = 'none';
@@ -40,7 +45,7 @@ function logout(){
 			start();
 		}
 	}
-	xhttp.open('GET', 'http://188.166.190.168:8000/accounts/logout', true);
+	xhttp.open('GET', server + 'logout', true);
     xhttp.send();
 }
 
@@ -48,37 +53,64 @@ function login(){
 	var xhttp = new XMLHttpRequest();
 	xhttp.onreadystatechange = function() {
 		if (this.readyState == 4 && this.status == 200) {
-
-			var tokenInput = xhttp.responseText.match(/<input type='hidden' name='csrfmiddlewaretoken' value='[\w]+' \/>/g)[0];
-			var token = tokenInput.split("\'")[5];
-			console.log('csrfmiddlewaretoken: ' + token);
-			var xhttpAgain = new XMLHttpRequest();
-			xhttpAgain.onreadystatechange = function() {
-				if (this.readyState == 4 && this.status == 200) {
-					console.log(xhttpAgain.responseText);
-					if (xhttpAgain.responseText.match(/success/g)) {
-						fs.writeFile('password.dat', document.getElementById('password').value, function(error){
-							if (error){
-								console.log(error);
-							} else {
-								start();
-							}
-						});
+			var response = JSON.parse(xhttp.responseText);
+			console.log(response);
+			if (response.status == 'success') {
+				fs.writeFile('password.dat', sha3.digest('hex'), function(error){
+					if (error){
+						console.log(error);
 					} else {
-						displayMessage('warning', "Login Failed!");
+						start();
 					}
+				});
+			} else {
+				displayMessage('warning', "Login Failed!");
+			}
+		}
+	}
+	xhttp.open('POST', server + 'login', true);
+	var sha3 = new SHA3.SHA3Hash();
+	sha3.update(document.getElementById('password').value);
+	var data = {
+  	"username": document.getElementById('username').value,
+  	"hashedPassword": sha3.digest('hex')
+  }
+  xhttp.setRequestHeader("Content-Type", "application/json");
+	xhttp.send(JSON.stringify(data));
+}
+
+function signup(){
+	if (document.getElementById('username').value == "" || document.getElementById('password').value == ""){
+		displayMessage('warning', "Empty Input!");
+	} else {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				var response = JSON.parse(xhttp.responseText);
+				console.log(response);
+				if (response.status == 'success') {
+					fs.writeFile('password.dat', sha3.digest('hex'), function(error){
+						if (error){
+							console.log(error);
+						} else {
+							start();
+						}
+					});
+				} else {
+					displayMessage('warning', "Signup Failed!");
 				}
 			}
-			xhttpAgain.open('POST', 'http://188.166.190.168:8000/accounts/login/', true);
-			var data = new FormData();
-			data.append('csrfmiddlewaretoken', token);
-			data.append('username', document.getElementById('username').value);
-			data.append('password', document.getElementById('password').value);
-			xhttpAgain.send(data);
 		}
-	};
-	xhttp.open('GET', 'http://188.166.190.168:8000/accounts/login/', true);
-	xhttp.send();
+		xhttp.open('POST', server + 'signup', true);
+		var sha3 = new SHA3.SHA3Hash();
+		sha3.update(document.getElementById('password').value);
+		var data = {
+	  	"username": document.getElementById('username').value,
+	  	"hashedPassword": sha3.digest('hex')
+	  }
+	  xhttp.setRequestHeader("Content-Type", "application/json");
+		xhttp.send(JSON.stringify(data));
+	}
 }
 
 function checkLoginStatus(cb){
@@ -89,11 +121,12 @@ function checkLoginStatus(cb){
 		if (this.readyState == 4 && this.status == 200) {
 			// Typical action to be performed when the document is ready:
 			var response = JSON.parse(xhttp.responseText);
-			if (response.login_status == "yes"){
+			console.log(response);
+			if (response.username != ""){
 				console.log('account address: ' + response.address);
 				bc.storeEthAccount({
 					"address": response.address,
-					"privateKey": response.encrypted_account
+					"privateKey": response.encryptedAccount
 				});
 				user = response.username;
 				console.log(response.address + " is logged in");
@@ -103,7 +136,7 @@ function checkLoginStatus(cb){
 			}
 		}
 	};
-	xhttp.open('GET', 'http://188.166.190.168:8000/wallet/check/', true);
+	xhttp.open('GET', server + 'loginstatus', true);
 	xhttp.send();
 }
 
@@ -115,14 +148,14 @@ function unlockAccount(cb){
 		} else {
 			cb(false);
 		}
-    });
+  });
 }
 
 function startSearchStore(){
 	if (user != ""){
 		bc.getBalance(function(balance){
 			if (balance < 0.04){
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether <span id="noFund">insufficient balance</span>)</span>`;
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(<span id="noFund">` + balance + `</span> Ether)</span>`;
 			} else {
 				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
 			}
@@ -254,8 +287,8 @@ function display(){
 								td = document.createElement('td');
 								node = document.createTextNode(review.score);
 								td.appendChild(node);
-								tr.appendChild(td);
 								td.style['vertical-align'] = 'middle';
+								tr.appendChild(td);
 								tbody.appendChild(tr);
 								// votes
 								td = document.createElement('td');
@@ -326,7 +359,7 @@ function addressToUsername(review, cb){
 			}
 		}
 	};
-	xhttp.open('GET', 'http://188.166.190.168:8000/account/' + review.reviewer, true);
+	xhttp.open('GET', server + 'address/' + review.reviewer, true);
 	xhttp.send();
 }
 
@@ -355,6 +388,9 @@ function submitReview(){
 
 			bc.submitReview(storeId, content, score, function(error, transactionHash){
 				setTimeout(function(){
+					bc.getBalance(function(balance){
+						recordHistory(transactionHash, balance, 'submit review');
+					});
 					startSearchStore();
 				}, 10000);
 			});
@@ -382,7 +418,10 @@ function createStoreWrapper(){
 								console.log("created!");
 								displayMessage('success', "Store Created!");
 								clearInterval(refreshCheck);
-								setTimeout(startSearchStore, 1000);
+								bc.getBalance(function(balance){
+									recordHistory(transactionHash, balance, 'create store');
+								});
+								startSearchStore();
 							}
 						});	
 					}, 1000);
@@ -397,11 +436,14 @@ function voteReview(reviewer, isUpvote){
 		if (flag){
 			// some ui process
 			displayMessage('warning', "Vote Pending...");
-			setTimeout(startSearchStore, 10000);
 			bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
 				if (error){
 					console.log(error);
 				} else {
+					bc.getBalance(function(balance){
+						recordHistory(transactionHash, balance, 'vote review');
+					});
+					setTimeout(startSearchStore, 10000);
 					// some ui process
 				}
 			});
@@ -427,24 +469,81 @@ function displayMessage(type, message){
 			<p class='feedback-p'>${message}</p>
 		</div>
 	`;
-	// if (type == 'danger'){
-	// 	document.getElementById('feedback-msg').innerHTML = `
-	// 		<div class='feedback-div alert alert-danger'>
-	// 			<p class='feedback-p'>` + message + `</p>
-	// 		</div>
-	// 	`;
-	// } else if (type == 'warning'){
-	// 	document.getElementById('feedback-msg').innerHTML = `
-	// 		<div class='feedback-div alert alert-warning'>
-	// 			<p class='feedback-p'>` + message + `</p>
-	// 		</div>
-	// 	`;
-	// } else {
-	// 	document.getElementById('feedback-msg').innerHTML = `
-	// 		<div class='feedback-div alert alert-success'>
-	// 			<p class='feedback-p'>` + message + `</p>
-	// 		</div>
-	// 	`;
-	// }
+}
+
+function recordHistory(hash, balance, type){
+	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() {
+		if (this.readyState == 4 && this.status == 200) {
+			console.log(xhttp.responseText);
+		}
+	}
+	xhttp.open('POST', server + 'history/' + user, true);
+	var data = {
+  	"hash": hash,
+  	"type": type,
+  	"balance": balance
+  }
+  xhttp.setRequestHeader("Content-Type", "application/json");
+	xhttp.send(JSON.stringify(data));
+}
+
+function viewHistory(){
+	if (document.getElementById('viewHistoryButton').innerHTML == "View History"){
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				var response = JSON.parse(xhttp.responseText);
+				console.log(response);
+				if (response.length != 0){
+					document.getElementById('noTransaction').style.display = "none";
+					console.log("displaying history...");
+					var tbody = document.getElementById('transactions');
+					while(tbody.hasChildNodes()){
+						tbody.removeChild(tbody.lastChild);
+					}
+					var td;
+					var node;
+					var link;
+					for (var i=0; i<response.length; i++){
+						var tr = document.createElement('tr');
+						// txhash
+						td = document.createElement('td');
+						link = document.createElement('a');
+						link.setAttribute('href', "https://kovan.etherscan.io/tx/" + response[i].hash);
+						link.setAttribute('target', "_blank");
+						node = document.createTextNode(response[i].hash.slice(0,6)+'..'+response[i].hash.slice(-4));
+						link.appendChild(node);
+						td.appendChild(link);
+						td.style['vertical-align'] = 'middle';
+						tr.appendChild(td);
+						// type
+						td = document.createElement('td');
+						node = document.createTextNode(response[i].type);
+						td.appendChild(node);
+						td.style['vertical-align'] = 'middle';
+						tr.appendChild(td);
+						// balance
+						td = document.createElement('td');
+						node = document.createTextNode(response[i].balance);
+						td.appendChild(node);
+						td.style['vertical-align'] = 'middle';
+						tr.appendChild(td);
+
+						tbody.appendChild(tr);
+					}
+				}
+			}
+		}
+		xhttp.open('GET', server + 'history/' + user, true);
+		xhttp.send();
+		document.getElementById('history').style.display = "block";
+		document.getElementById('reviewArea').style.display = "none";
+		document.getElementById('viewHistoryButton').innerHTML = "View Review";
+	} else {
+		document.getElementById('history').style.display = "none";
+		document.getElementById('reviewArea').style.display = "block";
+		document.getElementById('viewHistoryButton').innerHTML = "View History";
+	}
 }
 // End of main.js module

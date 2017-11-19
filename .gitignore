@@ -3,3 +3,4 @@ blockchain/*
 !blockchain/Contract.sol
 bundle.js
 package-lock.json
+test.js

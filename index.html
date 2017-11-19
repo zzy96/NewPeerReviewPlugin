@@ -9,29 +9,35 @@
 		<img src="favicon.png" width="30px" height="30px">
 
 		<div  id="logout">
-			<button class="btn btn-danger" id="logoutButton">LOG OUT</button>
+			<button class="btn btn-info btn-sm" id="viewHistoryButton">View History</button>
+			<button class="btn btn-danger btn-sm" id="logoutButton">LOG OUT</button>
 		</div>
 		<p class="headline" id="profile">Welcome to Blockchain Review System</p>
 
 		<div id="feedback-msg"></div>
 
 		<div id="login">
+
 			<p class="paragraph">This chrome extension is for decentralized store review powered by Ethereum blockchain</p>
 			<hr>
-			<div id="loginForm">
-				<form>
-					<div class="form-group">
-						<label>Username</label>
-						<input type="text" id="username" placeholder="username" class="form-control">
-					</div>
-					<div class="form-group">
-						<label>Password</label>
-						<input type="password" id="password" placeholder="password" class="form-control">
-					</div>
-				</form>
-				<a href="http://188.166.190.168:8000/accounts/signup" target="_blank"><button type="button" class="btn btn-danger">SIGN UP</button></a>
-				<button type="button" class="btn btn-success" id="loginButton">LOG IN</button>
+
+      <div class="tab-content" id="myTabContent">
+				<div class="tab-pane show active" id="loginForm" role="tabpanel" aria-labelledby="loginForm-tab">
+					<form>
+						<div class="form-group">
+							<label>Username</label>
+							<input type="text" id="username" placeholder="username" class="form-control">
+						</div>
+						<div class="form-group">
+							<label>Password</label>
+							<input type="password" id="password" placeholder="password" class="form-control">
+						</div>
+					</form>
+					<button type="button" class="btn btn-danger btn-sm" id="signupButton">SIGN UP</button>
+					<button type="button" class="btn btn-success btn-sm" id="loginButton">LOG IN</button>
+				</div>
 			</div>
+
 			<hr>
 		</div>
 		
@@ -39,6 +45,20 @@
 
 		<button class="btn btn-primary" id="createStore">Create Store</button>
 
+		<section id='history'>
+			<table class="table table-hover">
+				<thead>
+					<tr>
+						<th>Transaction Hash</th>
+						<th>Type</th>
+						<th>Balance</th>
+					</tr>
+				</thead>
+				<tbody id="transactions">
+				</tbody>	
+			</table>
+			<p id="noTransaction">-- No Transaction --</p>
+		</section>
 		<!-- Beignning of Review Area -->
 		<div id='reviewArea'>
 			
@@ -55,9 +75,8 @@
 					<tbody id="reviews">
 					</tbody>	
 				</table>
+				<p id="noReview">-- No Review --</p>
 			</section>
-
-			<p id="noReview">-- No Review --</p>
 
 			<div id="reviewForm">
 				<form id="formInputs">
