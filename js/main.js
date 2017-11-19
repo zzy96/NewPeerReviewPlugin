@@ -192,14 +192,25 @@ function getCurrentTabUrl(cb) {
 				document.getElementById('storeName').innerHTML = "Searching for "+storeName+" on Blockchain";
 				cb();
 			} else {
-				document.getElementById('feedback-msg').innerHTML = `
-				<div class='feedback-div alert alert-success'>
-					<p class='feedback-p'>Successfully connected to Blockchain!</p>
-				</div>
-				<div class='feedback-div alert alert-warning'>
-					<p class='feedback-p'>Please select a store on Google map!</p>
-				</div>
-				`;
+				if (user != ""){
+					document.getElementById('feedback-msg').innerHTML = `
+						<div class='feedback-div alert alert-success'>
+							<p class='feedback-p' style='font-size:14px;'>User Address: ${bc.getEthAccount().address}</p>
+						</div>
+						<div class='feedback-div alert alert-warning'>
+							<p class='feedback-p'>Please select a store on Google map!</p>
+						</div>
+					`;
+				} else {
+					document.getElementById('feedback-msg').innerHTML = `
+						<div class='feedback-div alert alert-success'>
+							<p class='feedback-p'>Successfully connected to Blockchain!</p>
+						</div>
+						<div class='feedback-div alert alert-warning'>
+							<p class='feedback-p'>Please select a store on Google map!</p>
+						</div>
+					`;
+				}
 			}
 		}
 		else{
@@ -542,8 +553,8 @@ function viewHistory(){
 		document.getElementById('viewHistoryButton').innerHTML = "View Review";
 	} else {
 		document.getElementById('history').style.display = "none";
-		document.getElementById('reviewArea').style.display = "block";
 		document.getElementById('viewHistoryButton').innerHTML = "View History";
+		startSearchStore();
 	}
 }
 // End of main.js module
