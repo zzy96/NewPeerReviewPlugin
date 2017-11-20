@@ -40,7 +40,10 @@ function logout(){
 		if (this.readyState == 4 && this.status == 200) {
 			user = "";
 			document.getElementById('submitButton').innerHTML = "Submit Your Review ";
+			document.getElementById('storeName').style.display = "block";
+			document.getElementById('storeScore').style.display = "block";
 			document.getElementById('reviewForm').style.display = "none";
+			document.getElementById('history').style.display = "none";
 			document.getElementById('profile').innerHTML = "Welcome to Blockchain Review System";
 			start();
 		}
@@ -177,40 +180,20 @@ function getCurrentTabUrl(cb) {
 
 		if (bc.web3IsConnected()){
 			// if blockchain is connected
-			if (user != ""){
-				document.getElementById('feedback-msg').innerHTML = `
-					<div class='feedback-div alert alert-success'>
-						<p class='feedback-p' style='font-size:14px;'>User Address: ${bc.getEthAccount().address}</p>
-					</div>
-				`;
-				// displayMessage('success', bc.getEthAccount().address);
-			} else {
-				displayMessage('success', "Successfully connected to Blockchain!");
-			}
 			// attempt to get a store on google map
 			if (getStoreFromUrl(url)){
+				displayMessage('success', "Successfully connected to Blockchain!");
 				document.getElementById('storeName').innerHTML = "Searching for "+storeName+" on Blockchain";
 				cb();
 			} else {
-				if (user != ""){
-					document.getElementById('feedback-msg').innerHTML = `
-						<div class='feedback-div alert alert-success'>
-							<p class='feedback-p' style='font-size:14px;'>User Address: ${bc.getEthAccount().address}</p>
-						</div>
-						<div class='feedback-div alert alert-warning'>
-							<p class='feedback-p'>Please select a store on Google map!</p>
-						</div>
-					`;
-				} else {
-					document.getElementById('feedback-msg').innerHTML = `
-						<div class='feedback-div alert alert-success'>
-							<p class='feedback-p'>Successfully connected to Blockchain!</p>
-						</div>
-						<div class='feedback-div alert alert-warning'>
-							<p class='feedback-p'>Please select a store on Google map!</p>
-						</div>
-					`;
-				}
+				document.getElementById('feedback-msg').innerHTML = `
+					<div class='feedback-div alert alert-success'>
+						<p class='feedback-p'>Successfully connected to Blockchain!</p>
+					</div>
+					<div class='feedback-div alert alert-warning'>
+						<p class='feedback-p'>Please select a store on Google map!</p>
+					</div>
+				`;
 			}
 		}
 		else{
@@ -257,7 +240,6 @@ function display(){
 					document.getElementById('noReview').style.display = 'block';
 					return;
 				} else{
-					document.getElementById('noReview').style.display = 'none';
 					console.log("displaying reviews...");
 					var tbody = document.getElementById('reviews');
 					while(tbody.hasChildNodes()){
@@ -281,57 +263,7 @@ function display(){
 
 							// display reviews
 							addressToUsername(review, function(review){
-								var tr = document.createElement('tr');
-								// reviewer
-								td = document.createElement('td');
-								node = document.createTextNode(review.username);
-								td.appendChild(node);
-								td.style['vertical-align'] = 'middle';
-								tr.appendChild(td);
-								// content
-								td = document.createElement('td');
-								node = document.createTextNode(review.comment);
-								td.appendChild(node);
-								td.style['vertical-align'] = 'middle';
-								tr.appendChild(td);
-								// score
-								td = document.createElement('td');
-								node = document.createTextNode(review.score);
-								td.appendChild(node);
-								td.style['vertical-align'] = 'middle';
-								tr.appendChild(td);
-								tbody.appendChild(tr);
-								// votes
-								td = document.createElement('td');
-
-								node = document.createTextNode(review.upvote + " ");
-								td.appendChild(node);
-
-								icon = document.createElement('span');
-								icon.className = 'glyphicon glyphicon-thumbs-up';
-								// icon.className = 'glyphicon glyphicon-chevron-up';
-								td.appendChild(icon);
-								if (user != ""){
-									icon.addEventListener('click', voteReview.bind(null, review.reviewer, true));
-								}
-
-								node = document.createElement('br');
-								td.appendChild(node);
-
-								node = document.createTextNode(review.downvote + " ");
-								td.appendChild(node);
-
-								icon = document.createElement('span');
-								icon.className = 'glyphicon glyphicon-thumbs-down';
-								// icon.className = 'glyphicon glyphicon-chevron-down';
-								td.appendChild(icon);
-								if (user != ""){
-									icon.addEventListener('click', voteReview.bind(null, review.reviewer, false));
-								}
-
-								td.style['vertical-align'] = 'middle';
-								tr.appendChild(td);
-								tbody.appendChild(tr);
+								appendReview(false, review.reviewer, review.username, review.comment, review.score, review.upvote, review.downvote);
 							});
 
 						});
@@ -405,7 +337,8 @@ function submitReview(){
 					bc.getBalance(function(balance){
 						recordHistory(transactionHash, balance, 'submit review');
 					});
-					startSearchStore();
+					appendReview(true, bc.getEthAccount().address, user, content, score, 0, 0);
+					setTimeout(startSearchStore, 20000);
 				}
 			});
 		}
@@ -423,7 +356,7 @@ function createStoreWrapper(){
 				
 				if (error){
 					console.log(error);
-					displayMessage('danger', "Creating Store Failed!");
+					displayMessage('danger', "Create Store Failed!");
 				} else {
 					bc.getBalance(function(balance){
 						recordHistory(transactionHash, balance, 'create store');
@@ -445,7 +378,7 @@ function createStoreWrapper(){
 	});
 }
 
-function voteReview(reviewer, isUpvote){
+function voteReview(icon, reviewer, isUpvote){
 	checkBalance(function(flag){
 		if (flag){
 			// some ui process
@@ -458,8 +391,9 @@ function voteReview(reviewer, isUpvote){
 					bc.getBalance(function(balance){
 						recordHistory(transactionHash, balance, 'vote review');
 					});
-					startSearchStore();
 					// some ui process
+					icon.style.color = 'red';
+					setTimeout(startSearchStore, 20000);
 				}
 			});
 		}
@@ -505,6 +439,11 @@ function recordHistory(hash, balance, type){
 
 function viewHistory(){
 	if (document.getElementById('viewHistoryButton').innerHTML == "View History"){
+		document.getElementById('feedback-msg').innerHTML = `
+			<div class='feedback-div alert alert-success'>
+				<p class='feedback-p' style='font-size:14px;'>User Address: ${bc.getEthAccount().address}</p>
+			</div>
+		`;
 		var xhttp = new XMLHttpRequest();
 		xhttp.onreadystatechange = function() {
 			if (this.readyState == 4 && this.status == 200) {
@@ -553,12 +492,83 @@ function viewHistory(){
 		xhttp.open('GET', server + 'history/' + user, true);
 		xhttp.send();
 		document.getElementById('history').style.display = "block";
+		document.getElementById('storeName').style.display = "none";
+		document.getElementById('storeScore').style.display = "none";
 		document.getElementById('reviewArea').style.display = "none";
 		document.getElementById('viewHistoryButton').innerHTML = "View Review";
 	} else {
 		document.getElementById('history').style.display = "none";
+		document.getElementById('storeName').style.display = "block";
+		document.getElementById('storeScore').style.display = "block";
 		document.getElementById('viewHistoryButton').innerHTML = "View History";
 		startSearchStore();
 	}
+}
+
+function appendReview(pending, reviewer, username, comment, score, upvote, downvote){
+  var tbody = document.getElementById('reviews');
+  if (!tbody.hasChildNodes()){
+  	document.getElementById('noReview').style.display = 'none';
+  }
+  var td;
+  var node;
+  var icon;
+  var tr = document.createElement('tr');
+  // reviewer
+  td = document.createElement('td');
+  node = document.createTextNode(username);
+  if (username == user){
+  	td.style.color = 'red';
+  }
+  td.appendChild(node);
+  td.style['vertical-align'] = 'middle';
+  tr.appendChild(td);
+  // content
+  td = document.createElement('td');
+  node = document.createTextNode(comment);
+  td.appendChild(node);
+  td.style['vertical-align'] = 'middle';
+  tr.appendChild(td);
+  // score
+  td = document.createElement('td');
+  node = document.createTextNode(score);
+  td.appendChild(node);
+  td.style['vertical-align'] = 'middle';
+  tr.appendChild(td);
+  tbody.appendChild(tr);
+  // votes
+  td = document.createElement('td');
+
+  node = document.createTextNode(upvote + " ");
+  td.appendChild(node);
+
+  icon = document.createElement('span');
+  icon.className = 'glyphicon glyphicon-thumbs-up';
+  // icon.className = 'glyphicon glyphicon-chevron-up';
+  td.appendChild(icon);
+  if (user != ""){
+    icon.addEventListener('click', voteReview.bind(null, icon, reviewer, true));
+  }
+
+  node = document.createElement('br');
+  td.appendChild(node);
+
+  node = document.createTextNode(downvote + " ");
+  td.appendChild(node);
+
+  icon = document.createElement('span');
+  icon.className = 'glyphicon glyphicon-thumbs-down';
+  // icon.className = 'glyphicon glyphicon-chevron-down';
+  td.appendChild(icon);
+  if (user != ""){
+    icon.addEventListener('click', voteReview.bind(null, icon, reviewer, false));
+  }
+
+  td.style['vertical-align'] = 'middle';
+  tr.appendChild(td);
+  if (pending){
+  	tr.style.color = 'grey';
+  }
+  tbody.insertBefore(tr, tbody.firstChild);
 }
 // End of main.js module
