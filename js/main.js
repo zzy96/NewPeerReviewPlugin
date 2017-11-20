@@ -155,9 +155,9 @@ function startSearchStore(){
 	if (user != ""){
 		bc.getBalance(function(balance){
 			if (balance < 0.04){
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(<span id="noFund">` + balance + `</span> Ether)</span>`;
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <br><span id="balance"><span class="glyphicon glyphicon-credit-card"></span><span id="noFund"> ` + balance + `</span> Ether</span>`;
 			} else {
-				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <span id="balance">(` + balance + ` Ether)</span>`;
+				document.getElementById('profile').innerHTML = `Hello, ` + user + ` <br><span id="balance"><span class="glyphicon glyphicon-credit-card"></span> ` + balance + ` Ether</span>`;
 			}
 		});
 	}
@@ -398,12 +398,15 @@ function submitReview(){
 			displayMessage('warning', "Review Pending...");
 
 			bc.submitReview(storeId, content, score, function(error, transactionHash){
-				setTimeout(function(){
+				if (error){
+					console.log(error);
+					displayMessage('danger', "Review Failed!");
+				} else {
 					bc.getBalance(function(balance){
 						recordHistory(transactionHash, balance, 'submit review');
 					});
 					startSearchStore();
-				}, 10000);
+				}
 			});
 		}
 	});
@@ -419,9 +422,12 @@ function createStoreWrapper(){
 			bc.createStore(storeId, function(error, transactionHash){
 				
 				if (error){
-					displayMessage('danger', "Creating Store Failed!");
 					console.log(error);
+					displayMessage('danger', "Creating Store Failed!");
 				} else {
+					bc.getBalance(function(balance){
+						recordHistory(transactionHash, balance, 'create store');
+					});
 					var refreshCheck = setInterval(function(){
 						bc.storeExist(storeId, function(is_exist){
 							console.log("waiting...");
@@ -429,9 +435,6 @@ function createStoreWrapper(){
 								console.log("created!");
 								displayMessage('success', "Store Created!");
 								clearInterval(refreshCheck);
-								bc.getBalance(function(balance){
-									recordHistory(transactionHash, balance, 'create store');
-								});
 								startSearchStore();
 							}
 						});	
@@ -450,11 +453,12 @@ function voteReview(reviewer, isUpvote){
 			bc.voteReview(storeId, reviewer, isUpvote, function(error, transactionHash){
 				if (error){
 					console.log(error);
+					displayMessage('danger', "Vote Failed!");
 				} else {
 					bc.getBalance(function(balance){
 						recordHistory(transactionHash, balance, 'vote review');
 					});
-					setTimeout(startSearchStore, 10000);
+					startSearchStore();
 					// some ui process
 				}
 			});
